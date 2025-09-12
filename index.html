@@ -40,7 +40,6 @@
             line-height: 1.6;
         }
 
-        /* Animated background particles */
         body::before {
             content: '';
             position: fixed;
@@ -125,15 +124,15 @@
             letter-spacing: 1px;
         }
 
-        /* Instructions */
+        /* Instructions - Collapsible */
         .instructions {
             background: linear-gradient(135deg, var(--dark-gray) 0%, #222 100%);
             border: 1px solid var(--border);
             border-radius: 15px;
-            padding: 30px;
             margin-bottom: 30px;
             position: relative;
             box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
         }
 
         .instructions::before {
@@ -147,13 +146,48 @@
             border-radius: 15px 15px 0 0;
         }
 
+        .instructions-header {
+            padding: 20px 30px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .instructions-header:hover {
+            background: rgba(245, 200, 66, 0.02);
+        }
+
         .instructions h3 {
             font-family: 'Bebas Neue', sans-serif;
             font-size: 2.2em;
             color: var(--yellow);
-            margin-bottom: 25px;
+            margin: 0;
             letter-spacing: 2px;
             text-shadow: 0 0 20px var(--glow);
+        }
+
+        .expand-icon {
+            color: var(--yellow);
+            font-size: 1.5em;
+            transition: transform 0.3s ease;
+        }
+
+        .instructions.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .instructions-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            padding: 0 30px;
+        }
+
+        .instructions.expanded .instructions-content {
+            max-height: 500px;
+            padding: 0 30px 30px 30px;
         }
 
         .instructions-grid {
@@ -705,35 +739,41 @@
     </div>
 
     <div class="container">
-        <div class="instructions">
-            <h3>HOW TO PLAY</h3>
-            <div class="instructions-grid">
-                <div class="instruction-item">
-                    <div class="instruction-icon">📱</div>
-                    <div class="instruction-text">
-                        <strong>MOBILE PLAYERS</strong>
-                        <span>Tap anywhere on screen when you hear the high GO beep (880Hz). The screen is your button - react fast but don't jump the gun!</span>
+        <!-- Collapsible Instructions -->
+        <div class="instructions" id="instructions">
+            <div class="instructions-header" onclick="toggleInstructions()">
+                <h3>HOW TO PLAY</h3>
+                <span class="expand-icon" id="expandIcon">▼</span>
+            </div>
+            <div class="instructions-content">
+                <div class="instructions-grid">
+                    <div class="instruction-item">
+                        <div class="instruction-icon">📱</div>
+                        <div class="instruction-text">
+                            <strong>MOBILE PLAYERS</strong>
+                            <span>Tap anywhere on screen when you hear the high GO beep (880Hz). The screen is your button - react fast but don't jump the gun!</span>
+                        </div>
                     </div>
-                </div>
-                <div class="instruction-item">
-                    <div class="instruction-icon">💻</div>
-                    <div class="instruction-text">
-                        <strong>DESKTOP WARRIORS</strong>
-                        <span>Smash that SPACE bar or click when you hear GO. Timing is everything - too early = penalty!</span>
+                    <div class="instruction-item">
+                        <div class="instruction-icon">💻</div>
+                        <div class="instruction-text">
+                            <strong>DESKTOP WARRIORS</strong>
+                            <span>Smash that SPACE bar or click when you hear GO. Timing is everything - too early = penalty!</span>
+                        </div>
                     </div>
-                </div>
-                <div class="instruction-item">
-                    <div class="instruction-icon">🔊</div>
-                    <div class="instruction-text">
-                        <strong>AUDIO SIGNALS</strong>
-                        <span>HIGH tone (880Hz) = GO NOW! LOW tone (440Hz) = TRAP in hard mode - don't react!</span>
+                    <div class="instruction-item">
+                        <div class="instruction-icon">🔊</div>
+                        <div class="instruction-text">
+                            <strong>AUDIO SIGNALS</strong>
+                            <span>HIGH tone (880Hz) = GO NOW! LOW tone (440Hz) = TRAP in hard mode - don't react!</span>
+                        </div>
                     </div>
-                </div>
-                <div class="instruction-item">
-                    <div class="instruction-icon">🏆</div>
-                    <div class="instruction-text">
-                        <strong>SCORING SYSTEM</strong>
-                        <span>Faster = more points. Build streaks for multipliers (3x = 1.15x, 6x = 1.25x). Penalties for false starts!</span>
+                    <div class="instruction-item">
+                        <div class="instruction-icon">🏆</div>
+                        <div class="instruction-text">
+                            <strong>SCORING SYSTEM</strong>
+                            <span>Faster = more points. Build streaks for multipliers (3x = 1.15x, 6x = 1.25x). Penalties for false starts!</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -807,7 +847,6 @@
             <h2 style="color: var(--yellow); font-family: 'Bebas Neue', sans-serif; font-size: 2em; margin-bottom: 1rem;">Leaderboard</h2>
             <div class="controls">
                 <button id="saveToLeaderboard" disabled>Save to Leaderboard</button>
-                <button id="clearLeaderboard">Clear Leaderboard</button>
             </div>
             <div id="leaderboardContent"></div>
         </div>
@@ -849,21 +888,17 @@
             async init() {
                 if (this.initialized) return;
                 
-                // Create audio context
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 this.context = new AudioContext();
                 
-                // Master gain for volume control
                 this.masterGain = this.context.createGain();
                 this.masterGain.gain.value = 0.3;
                 this.masterGain.connect(this.context.destination);
                 
-                // Resume context for mobile browsers
                 if (this.context.state === 'suspended') {
                     await this.context.resume();
                 }
                 
-                // Warmup ping to reduce first-beep lag on iOS/Safari
                 this.playTone(1, 0.001, 0.01);
                 
                 this.initialized = true;
@@ -881,22 +916,21 @@
                 oscillator.frequency.value = frequency;
                 oscillator.type = 'sine';
                 
-                // Fast attack and quick decay for snappy percussive sound
                 const now = this.context.currentTime;
                 gainNode.gain.setValueAtTime(0, now);
-                gainNode.gain.linearRampToValueAtTime(volume, now + 0.01); // 10ms attack
-                gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration); // Quick decay
+                gainNode.gain.linearRampToValueAtTime(volume, now + 0.01);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
                 
                 oscillator.start(now);
                 oscillator.stop(now + duration + 0.05);
             }
 
             playGoTone() {
-                this.playTone(880); // High tone for GO
+                this.playTone(880);
             }
 
             playBaitTone() {
-                this.playTone(440); // Low tone for bait
+                this.playTone(440);
             }
         }
 
@@ -920,11 +954,9 @@
                 this.cooldownTimeout = null;
                 this.hasReacted = false;
                 
-                // Settings
                 this.hardMode = false;
                 this.pace = 3;
                 
-                // Pace profiles (foreperiod windows in ms)
                 this.paceProfiles = {
                     1: { min: 1200, max: 2600, label: 'Chill' },
                     2: { min: 1000, max: 2200, label: 'Smooth' },
@@ -933,7 +965,6 @@
                     5: { min: 500, max: 1500, label: 'Beast' }
                 };
                 
-                // Constants
                 this.BAIT_CHANCE = 0.28;
                 this.BAIT_PASS_WINDOW = 700;
                 this.COOLDOWN_MS = 650;
@@ -945,12 +976,10 @@
             }
 
             bindEvents() {
-                // Controls
                 document.getElementById('startBtn').addEventListener('click', () => this.start());
                 document.getElementById('stopBtn').addEventListener('click', () => this.stop());
                 document.getElementById('shareBtn').addEventListener('click', () => this.share());
                 
-                // Settings
                 document.getElementById('hardMode').addEventListener('change', (e) => {
                     this.hardMode = e.target.checked;
                     this.saveSettings();
@@ -968,9 +997,7 @@
                     this.saveSettings();
                 });
                 
-                // Reaction inputs
                 document.addEventListener('pointerdown', (e) => {
-                    // Ignore if clicking on controls
                     if (e.target.closest('button, input, label')) return;
                     this.react();
                 });
@@ -982,7 +1009,6 @@
                     }
                 });
                 
-                // Visibility change for pause
                 document.addEventListener('visibilitychange', () => {
                     if (document.hidden && this.state !== GameState.IDLE && this.state !== GameState.FINISHED) {
                         this.pause();
@@ -991,11 +1017,8 @@
                     }
                 });
                 
-                // Leaderboard
                 document.getElementById('saveToLeaderboard').addEventListener('click', () => this.openNameModal());
-                document.getElementById('clearLeaderboard').addEventListener('click', () => this.clearLeaderboard());
                 
-                // Modal
                 document.getElementById('saveNameBtn').addEventListener('click', () => this.saveScore());
                 document.getElementById('cancelNameBtn').addEventListener('click', () => this.closeNameModal());
                 document.getElementById('playerName').addEventListener('keydown', (e) => {
@@ -1028,10 +1051,12 @@
             }
 
             async start() {
-                // Initialize audio on first user gesture
+                // Collapse instructions when starting
+                const instructions = document.getElementById('instructions');
+                instructions.classList.remove('expanded');
+                
                 await this.audio.init();
                 
-                // Reset game state
                 this.state = GameState.WAITING;
                 this.currentRound = 0;
                 this.score = 0;
@@ -1042,7 +1067,6 @@
                 this.falseStarts = 0;
                 this.noGoHits = 0;
                 
-                // Update UI
                 document.getElementById('startBtn').disabled = true;
                 document.getElementById('stopBtn').disabled = false;
                 document.getElementById('saveToLeaderboard').disabled = true;
@@ -1058,7 +1082,6 @@
                 this.clearTimeouts();
                 this.state = GameState.IDLE;
                 
-                // Update UI
                 document.getElementById('startBtn').disabled = false;
                 document.getElementById('stopBtn').disabled = true;
                 document.getElementById('hardMode').disabled = false;
@@ -1104,11 +1127,9 @@
                 this.state = GameState.WAITING;
                 this.updateStatus('LISTEN…', 'Wait for the GO beep. Don\'t jump early.');
                 
-                // Random foreperiod based on pace
                 const profile = this.paceProfiles[this.pace];
                 const delay = profile.min + Math.random() * (profile.max - profile.min);
                 
-                // Determine if this is a bait trial (hard mode only)
                 const isBait = this.hardMode && Math.random() < this.BAIT_CHANCE;
                 
                 this.waitTimeout = setTimeout(() => {
@@ -1127,7 +1148,6 @@
                 
                 this.updateStatus('GO!', 'Tap now!', 'grade-a');
                 
-                // Auto-advance after a timeout if no response
                 this.cueTimeout = setTimeout(() => {
                     if (!this.hasReacted) {
                         this.handleMissedGo();
@@ -1142,7 +1162,6 @@
                 
                 this.updateStatus('IGNORE', 'Do nothing for ~700ms to pass.', 'grade-b');
                 
-                // Pass window for bait
                 this.cueTimeout = setTimeout(() => {
                     if (!this.hasReacted) {
                         this.handleBaitPass();
@@ -1151,7 +1170,6 @@
             }
 
             react() {
-                // Ignore if already reacted or in cooldown/finished
                 if (this.hasReacted || this.state === GameState.COOLDOWN || 
                     this.state === GameState.IDLE || this.state === GameState.FINISHED || 
                     this.state === GameState.PAUSED) {
@@ -1177,37 +1195,30 @@
             handleGoReaction() {
                 const rt = performance.now() - this.cueStartTime;
                 
-                // Check for anticipation (too early)
                 if (rt < this.MIN_VALID_RT) {
                     this.handleTooEarly();
                     return;
                 }
                 
-                // Valid reaction
                 this.lastRT = Math.round(rt);
                 this.validRTs.push(this.lastRT);
                 
-                // Update best
                 if (this.bestMs === null || this.lastRT < this.bestMs) {
                     this.bestMs = this.lastRT;
                 }
                 
-                // Calculate score
                 const points = this.calculatePoints(this.lastRT);
                 this.score += points;
                 this.streak++;
                 
-                // Get grade
                 const grade = this.getGrade(this.lastRT);
                 
-                // Update UI with feedback
                 this.updateStatus(
                     `${this.lastRT}ms ${grade.emoji}`,
                     `${grade.label} • +${points} points`,
                     grade.class
                 );
                 
-                // Haptic feedback
                 this.vibrate(20);
                 
                 this.updateHUD();
@@ -1251,7 +1262,6 @@
             }
 
             handleBaitPass() {
-                // Successfully ignored bait
                 let points = 120;
                 if (this.streak >= 3) points += 40;
                 
@@ -1266,7 +1276,6 @@
             }
 
             handleMissedGo() {
-                // No reaction to GO cue
                 this.streak = 0;
                 
                 this.updateStatus('MISSED', 'React faster next time', 'grade-d');
@@ -1295,7 +1304,6 @@
                     avgMs ? `Avg ${avgMs}ms • Session complete. Save your score!` : 'Session complete. Save your score!'
                 );
                 
-                // Enable save button
                 document.getElementById('saveToLeaderboard').disabled = false;
                 document.getElementById('startBtn').disabled = false;
                 document.getElementById('stopBtn').disabled = true;
@@ -1307,17 +1315,14 @@
             }
 
             calculatePoints(rt) {
-                // Base points
                 let points = Math.max(0, 550 - rt);
                 
-                // Bonuses
                 if (rt < 180) {
-                    points += 75 + 50; // S-tier bonus
+                    points += 75 + 50;
                 } else if (rt < 230) {
-                    points += 75; // A-tier bonus
+                    points += 75;
                 }
                 
-                // Streak multipliers
                 if (this.streak >= 6) {
                     points *= 1.25;
                 } else if (this.streak >= 3) {
@@ -1371,12 +1376,10 @@
                 }
             }
 
-            // Leaderboard functions
             openNameModal() {
                 const modal = document.getElementById('nameModal');
                 modal.classList.add('active');
                 
-                // Load remembered name
                 const savedName = localStorage.getItem('sonic_snap_name_v1');
                 if (savedName) {
                     document.getElementById('playerName').value = savedName;
@@ -1396,15 +1399,12 @@
                     return;
                 }
                 
-                // Remember name
                 localStorage.setItem('sonic_snap_name_v1', name);
                 
-                // Calculate average
                 const avgMs = this.validRTs.length > 0 
                     ? Math.round(this.validRTs.reduce((a, b) => a + b, 0) / this.validRTs.length)
                     : null;
                 
-                // Create entry
                 const entry = {
                     name,
                     score: this.score,
@@ -1416,26 +1416,22 @@
                     when: Date.now()
                 };
                 
-                // Load existing leaderboard
                 let leaderboard = [];
                 const saved = localStorage.getItem('sonic_snap_lb_v1');
                 if (saved) {
                     leaderboard = JSON.parse(saved);
                 }
                 
-                // Add entry and sort
                 leaderboard.push(entry);
                 leaderboard.sort((a, b) => b.score - a.score);
-                leaderboard = leaderboard.slice(0, 10); // Keep top 10
+                leaderboard = leaderboard.slice(0, 10);
                 
-                // Save
                 localStorage.setItem('sonic_snap_lb_v1', JSON.stringify(leaderboard));
                 
                 this.closeNameModal();
                 this.updateLeaderboard();
                 this.showToast('Score saved to leaderboard!');
                 
-                // Disable save button
                 document.getElementById('saveToLeaderboard').disabled = true;
             }
 
@@ -1472,14 +1468,6 @@
                 content.innerHTML = html;
             }
 
-            clearLeaderboard() {
-                if (confirm('Clear all leaderboard entries? This cannot be undone.')) {
-                    localStorage.removeItem('sonic_snap_lb_v1');
-                    this.updateLeaderboard();
-                    this.showToast('Leaderboard cleared');
-                }
-            }
-
             async share() {
                 const avgMs = this.validRTs.length > 0 
                     ? Math.round(this.validRTs.reduce((a, b) => a + b, 0) / this.validRTs.length)
@@ -1499,7 +1487,6 @@
                             text: text
                         });
                     } catch (err) {
-                        // User cancelled or error
                         if (err.name !== 'AbortError') {
                             this.copyToClipboard(text);
                         }
@@ -1510,7 +1497,6 @@
             }
 
             copyToClipboard(text) {
-                // Create temporary textarea
                 const textarea = document.createElement('textarea');
                 textarea.value = text;
                 textarea.style.position = 'fixed';
