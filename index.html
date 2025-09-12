@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sonic Snap — Audio Reaction Trainer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --black: #1A1A1A;
+            --yellow: #F5C842;
+            --gold: #FFD700;
+            --white: #FFFFFF;
+            --gray: #B0B0B0;
+            --dark-gray: #2A2A2A;
+            --border: #3A3A3A;
+            --green: #4CAF50;
+            --red: #FF5722;
+            --blue: #4A90E2;
+            --shadow: rgba(0,0,0,0.5);
+            --glow: rgba(245, 200, 66, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--black);
+            color: var(--white);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            user-select: none;
+            line-height: 1.6;
+        }
+
+        /* Animated background particles */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(245, 200, 66, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 50%, rgba(245, 200, 66, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--dark-gray) 0%, #1f1f1f 100%);
+            padding: 20px;
+            border-bottom: 3px solid var(--yellow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 10px 30px var(--shadow);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .logo-wrapper {
+            flex-shrink: 0;
+        }
+
+        .logo-wrapper img {
+            width: 150px;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+            filter: drop-shadow(0 0 25px var(--yellow)) brightness(1.15);
+            animation: logoGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes logoGlow {
+            0% {
+                filter: drop-shadow(0 0 20px var(--yellow)) brightness(1.1);
+            }
+            100% {
+                filter: drop-shadow(0 0 40px var(--gold)) drop-shadow(0 0 60px var(--yellow)) brightness(1.25);
+            }
+        }
+
+        .header-details {
+            border-left: 3px solid var(--yellow);
+            padding-left: 30px;
+        }
+
+        .header-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2.5em;
+            color: var(--yellow);
+            letter-spacing: 2px;
+            text-shadow: 0 0 25px var(--glow);
+        }
+
+        .header-meta {
+            color: var(--gray);
+            font-size: 1em;
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Instructions */
+        .instructions {
+            background: linear-gradient(135deg, var(--dark-gray) 0%, #222 100%);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            position: relative;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+        }
+
+        .instructions::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--yellow), transparent);
+            border-radius: 15px 15px 0 0;
+        }
+
+        .instructions h3 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2.2em;
+            color: var(--yellow);
+            margin-bottom: 25px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px var(--glow);
+        }
+
+        .instructions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .instruction-item {
+            background: rgba(245, 200, 66, 0.05);
+            border-left: 3px solid var(--yellow);
+            padding: 15px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .instruction-item:hover {
+            background: rgba(245, 200, 66, 0.1);
+            transform: translateX(5px);
+        }
+
+        .instruction-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .instruction-text strong {
+            display: block;
+            color: var(--gold);
+            margin-bottom: 0.5rem;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.2em;
+            letter-spacing: 1px;
+        }
+
+        .instruction-text span {
+            color: var(--gray);
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        /* Card */
+        .card {
+            background: linear-gradient(135deg, var(--dark-gray) 0%, #222 100%);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            position: relative;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 20px rgba(245, 200, 66, 0.1);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--yellow), transparent);
+            border-radius: 15px 15px 0 0;
+        }
+
+        /* Status display */
+        .status-container {
+            text-align: center;
+            margin: 2rem 0;
+            position: relative;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .status-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(245, 200, 66, 0.2), transparent);
+            animation: statusPulse 3s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { 
+                transform: translate(-50%, -50%) scale(1); 
+                opacity: 0.3; 
+            }
+            50% { 
+                transform: translate(-50%, -50%) scale(1.3); 
+                opacity: 0.6; 
+            }
+        }
+
+        .status-text {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 700;
+            text-shadow: 0 0 30px var(--glow);
+            position: relative;
+            z-index: 1;
+            letter-spacing: 2px;
+            color: var(--yellow);
+        }
+
+        .status-hint {
+            font-size: 0.95rem;
+            color: var(--gray);
+            margin-top: 0.5rem;
+            position: relative;
+            z-index: 1;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* HUD pills */
+        .hud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            justify-content: center;
+        }
+
+        .hud-pill {
+            background: rgba(0,0,0,0.4);
+            border: 2px solid var(--yellow);
+            border-radius: 12px;
+            padding: 0.5rem 1rem;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.3s ease;
+        }
+
+        .hud-pill:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(245, 200, 66, 0.2);
+        }
+
+        .hud-pill strong {
+            color: var(--yellow);
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.1em;
+            letter-spacing: 1px;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 100px;
+            padding: 1rem 1.5rem;
+            background: var(--yellow);
+            color: var(--black);
+            border: 2px solid var(--yellow);
+            border-radius: 8px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.15em;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            font-weight: bold;
+            box-shadow: 0 0 20px var(--glow);
+        }
+
+        button:hover {
+            background: rgba(245, 200, 66, 0.15);
+            border-color: var(--yellow);
+            color: var(--white);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            background: var(--dark-gray);
+            border-color: var(--border);
+            color: var(--gray);
+            box-shadow: none;
+        }
+
+        button:focus-visible {
+            outline: 3px solid var(--gold);
+            outline-offset: 3px;
+        }
+
+        /* Settings */
+        .setting {
+            margin-bottom: 1.5rem;
+        }
+
+        .setting label {
+            display: block;
+            margin-bottom: 0.75rem;
+            color: var(--gray);
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.4em;
+            letter-spacing: 1px;
+        }
+
+        .toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+        }
+
+        .toggle input[type="checkbox"] {
+            width: 56px;
+            height: 28px;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid var(--border);
+        }
+
+        .toggle input[type="checkbox"]:checked {
+            background: var(--yellow);
+            border-color: var(--yellow);
+        }
+
+        .toggle input[type="checkbox"]::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle input[type="checkbox"]:checked::after {
+            transform: translateX(28px);
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            outline: none;
+            -webkit-appearance: none;
+            position: relative;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: var(--yellow);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 10px var(--glow);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 2px 15px var(--glow);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            background: var(--yellow);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 10px var(--glow);
+        }
+
+        .slider-value {
+            min-width: 100px;
+            text-align: center;
+            font-weight: 700;
+            color: var(--yellow);
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.3em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Stats cards */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card {
+            background: rgba(0,0,0,0.4);
+            border: 2px solid var(--yellow);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(245, 200, 66, 0.2);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--gray);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2.5em;
+            color: var(--yellow);
+            text-shadow: 0 0 15px var(--glow);
+        }
+
+        /* Leaderboard */
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .leaderboard-table th,
+        .leaderboard-table td {
+            padding: 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .leaderboard-table th {
+            font-size: 0.75rem;
+            color: var(--gray);
+            text-transform: uppercase;
+        }
+
+        .leaderboard-table td {
+            font-size: 0.9rem;
+            color: var(--white);
+        }
+
+        .leaderboard-empty {
+            text-align: center;
+            padding: 2rem;
+            color: var(--gray);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--dark-gray);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .modal h2 {
+            margin-bottom: 1rem;
+            color: var(--yellow);
+            font-family: 'Bebas Neue', sans-serif;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 0.8rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            color: var(--white);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .modal input:focus {
+            outline: 2px solid var(--yellow);
+            outline-offset: 2px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--dark-gray);
+            border: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 999;
+            color: var(--white);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Grade colors */
+        .grade-s { color: var(--gold) !important; text-shadow: 0 0 20px var(--glow) !important; }
+        .grade-a { color: var(--yellow) !important; }
+        .grade-b { color: var(--blue) !important; }
+        .grade-c { color: var(--green) !important; }
+        .grade-d { color: var(--gray) !important; }
+        .grade-fail { color: var(--red) !important; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 20px;
+            }
+            
+            .logo-wrapper img {
+                width: 120px;
+            }
+            
+            .header-details {
+                border-left: none;
+                border-top: 3px solid var(--yellow);
+                padding-left: 0;
+                padding-top: 20px;
+            }
+            
+            .header-title {
+                font-size: 2em;
+            }
+            
+            .status-text {
+                font-size: 2.5rem;
+            }
+            
+            .instructions-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+
+        /* Accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            animation: fadeIn 0.6s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <div class="logo-wrapper">
+                <img src="vlvl16x9.png" alt="Sonic Snap Logo">
+            </div>
+            <div class="header-details">
+                <div class="header-title">SONIC SNAP</div>
+                <div class="header-meta">Audio Reaction Trainer • Test Your Elite Gaming Reflexes</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="instructions">
+            <h3>HOW TO PLAY</h3>
+            <div class="instructions-grid">
+                <div class="instruction-item">
+                    <div class="instruction-icon">📱</div>
+                    <div class="instruction-text">
+                        <strong>MOBILE PLAYERS</strong>
+                        <span>Tap anywhere on screen when you hear the high GO beep (880Hz). The screen is your button - react fast but don't jump the gun!</span>
+                    </div>
+                </div>
+                <div class="instruction-item">
+                    <div class="instruction-icon">💻</div>
+                    <div class="instruction-text">
+                        <strong>DESKTOP WARRIORS</strong>
+                        <span>Smash that SPACE bar or click when you hear GO. Timing is everything - too early = penalty!</span>
+                    </div>
+                </div>
+                <div class="instruction-item">
+                    <div class="instruction-icon">🔊</div>
+                    <div class="instruction-text">
+                        <strong>AUDIO SIGNALS</strong>
+                        <span>HIGH tone (880Hz) = GO NOW! LOW tone (440Hz) = TRAP in hard mode - don't react!</span>
+                    </div>
+                </div>
+                <div class="instruction-item">
+                    <div class="instruction-icon">🏆</div>
+                    <div class="instruction-text">
+                        <strong>SCORING SYSTEM</strong>
+                        <span>Faster = more points. Build streaks for multipliers (3x = 1.15x, 6x = 1.25x). Penalties for false starts!</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">            
+            <div class="status-container">
+                <div class="status-ring"></div>
+                <div class="status-text" id="statusText">TAP START</div>
+                <div class="status-hint" id="statusHint">Ready to test your reflexes?</div>
+            </div>
+
+            <div class="hud" id="hud">
+                <div class="hud-pill">Round <strong id="hudRound">0/0</strong></div>
+                <div class="hud-pill">Score <strong id="hudScore">0</strong></div>
+                <div class="hud-pill">Best <strong id="hudBest">—</strong></div>
+                <div class="hud-pill">Avg <strong id="hudAvg">—</strong></div>
+                <div class="hud-pill">Streak 🔥 <strong id="hudStreak">0</strong></div>
+            </div>
+
+            <div class="controls">
+                <button id="startBtn">START</button>
+                <button id="stopBtn" disabled>STOP</button>
+                <button id="shareBtn">SHARE</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="setting">
+                <div class="toggle">
+                    <input type="checkbox" id="hardMode">
+                    <label for="hardMode">Hard Mode (Go / No-Go)</label>
+                </div>
+            </div>
+
+            <div class="setting">
+                <label for="pace">Pace</label>
+                <div class="slider-container">
+                    <input type="range" id="pace" min="1" max="5" value="3">
+                    <div class="slider-value" id="paceValue">Locked</div>
+                </div>
+            </div>
+
+            <div class="setting">
+                <label for="rounds">Rounds</label>
+                <div class="slider-container">
+                    <input type="range" id="rounds" min="5" max="30" value="10" step="5">
+                    <div class="slider-value" id="roundsValue">10</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-label">Last</div>
+                    <div class="stat-value" id="statLast">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">False Starts</div>
+                    <div class="stat-value" id="statFalseStarts">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">No-Go Hits</div>
+                    <div class="stat-value" id="statNoGoHits">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 style="color: var(--yellow); font-family: 'Bebas Neue', sans-serif; font-size: 2em; margin-bottom: 1rem;">Leaderboard</h2>
+            <div class="controls">
+                <button id="saveToLeaderboard" disabled>Save to Leaderboard</button>
+                <button id="clearLeaderboard">Clear Leaderboard</button>
+            </div>
+            <div id="leaderboardContent"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="nameModal">
+        <div class="modal-content">
+            <h2>Save Score</h2>
+            <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+            <div class="modal-buttons">
+                <button id="saveNameBtn">Save</button>
+                <button id="cancelNameBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+    <script>
+        // Game state machine
+        const GameState = {
+            IDLE: 'idle',
+            WAITING: 'waiting',
+            CUED_GO: 'cuedGo',
+            CUED_BAIT: 'cuedBait',
+            COOLDOWN: 'cooldown',
+            PAUSED: 'paused',
+            FINISHED: 'finished'
+        };
+
+        // Audio context and utilities
+        class AudioManager {
+            constructor() {
+                this.context = null;
+                this.masterGain = null;
+                this.initialized = false;
+            }
+
+            async init() {
+                if (this.initialized) return;
+                
+                // Create audio context
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.context = new AudioContext();
+                
+                // Master gain for volume control
+                this.masterGain = this.context.createGain();
+                this.masterGain.gain.value = 0.3;
+                this.masterGain.connect(this.context.destination);
+                
+                // Resume context for mobile browsers
+                if (this.context.state === 'suspended') {
+                    await this.context.resume();
+                }
+                
+                // Warmup ping to reduce first-beep lag on iOS/Safari
+                this.playTone(1, 0.001, 0.01);
+                
+                this.initialized = true;
+            }
+
+            playTone(frequency, volume = 0.3, duration = 0.1) {
+                if (!this.initialized) return;
+                
+                const oscillator = this.context.createOscillator();
+                const gainNode = this.context.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.masterGain);
+                
+                oscillator.frequency.value = frequency;
+                oscillator.type = 'sine';
+                
+                // Fast attack and quick decay for snappy percussive sound
+                const now = this.context.currentTime;
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(volume, now + 0.01); // 10ms attack
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration); // Quick decay
+                
+                oscillator.start(now);
+                oscillator.stop(now + duration + 0.05);
+            }
+
+            playGoTone() {
+                this.playTone(880); // High tone for GO
+            }
+
+            playBaitTone() {
+                this.playTone(440); // Low tone for bait
+            }
+        }
+
+        // Main game class
+        class SonicSnap {
+            constructor() {
+                this.audio = new AudioManager();
+                this.state = GameState.IDLE;
+                this.currentRound = 0;
+                this.totalRounds = 10;
+                this.score = 0;
+                this.streak = 0;
+                this.bestMs = null;
+                this.validRTs = [];
+                this.lastRT = null;
+                this.falseStarts = 0;
+                this.noGoHits = 0;
+                this.cueStartTime = null;
+                this.waitTimeout = null;
+                this.cueTimeout = null;
+                this.cooldownTimeout = null;
+                this.hasReacted = false;
+                
+                // Settings
+                this.hardMode = false;
+                this.pace = 3;
+                
+                // Pace profiles (foreperiod windows in ms)
+                this.paceProfiles = {
+                    1: { min: 1200, max: 2600, label: 'Chill' },
+                    2: { min: 1000, max: 2200, label: 'Smooth' },
+                    3: { min: 800, max: 2000, label: 'Locked' },
+                    4: { min: 650, max: 1700, label: 'Sweaty' },
+                    5: { min: 500, max: 1500, label: 'Beast' }
+                };
+                
+                // Constants
+                this.BAIT_CHANCE = 0.28;
+                this.BAIT_PASS_WINDOW = 700;
+                this.COOLDOWN_MS = 650;
+                this.MIN_VALID_RT = 100;
+                
+                this.bindEvents();
+                this.loadSettings();
+                this.updateLeaderboard();
+            }
+
+            bindEvents() {
+                // Controls
+                document.getElementById('startBtn').addEventListener('click', () => this.start());
+                document.getElementById('stopBtn').addEventListener('click', () => this.stop());
+                document.getElementById('shareBtn').addEventListener('click', () => this.share());
+                
+                // Settings
+                document.getElementById('hardMode').addEventListener('change', (e) => {
+                    this.hardMode = e.target.checked;
+                    this.saveSettings();
+                });
+                
+                document.getElementById('pace').addEventListener('input', (e) => {
+                    this.pace = parseInt(e.target.value);
+                    document.getElementById('paceValue').textContent = this.paceProfiles[this.pace].label;
+                    this.saveSettings();
+                });
+                
+                document.getElementById('rounds').addEventListener('input', (e) => {
+                    this.totalRounds = parseInt(e.target.value);
+                    document.getElementById('roundsValue').textContent = this.totalRounds;
+                    this.saveSettings();
+                });
+                
+                // Reaction inputs
+                document.addEventListener('pointerdown', (e) => {
+                    // Ignore if clicking on controls
+                    if (e.target.closest('button, input, label')) return;
+                    this.react();
+                });
+                
+                document.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space') {
+                        e.preventDefault();
+                        this.react();
+                    }
+                });
+                
+                // Visibility change for pause
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden && this.state !== GameState.IDLE && this.state !== GameState.FINISHED) {
+                        this.pause();
+                    } else if (!document.hidden && this.state === GameState.PAUSED) {
+                        this.resume();
+                    }
+                });
+                
+                // Leaderboard
+                document.getElementById('saveToLeaderboard').addEventListener('click', () => this.openNameModal());
+                document.getElementById('clearLeaderboard').addEventListener('click', () => this.clearLeaderboard());
+                
+                // Modal
+                document.getElementById('saveNameBtn').addEventListener('click', () => this.saveScore());
+                document.getElementById('cancelNameBtn').addEventListener('click', () => this.closeNameModal());
+                document.getElementById('playerName').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') this.saveScore();
+                });
+            }
+
+            loadSettings() {
+                const saved = localStorage.getItem('sonic_snap_settings');
+                if (saved) {
+                    const settings = JSON.parse(saved);
+                    this.hardMode = settings.hardMode || false;
+                    this.pace = settings.pace || 3;
+                    this.totalRounds = settings.rounds || 10;
+                    
+                    document.getElementById('hardMode').checked = this.hardMode;
+                    document.getElementById('pace').value = this.pace;
+                    document.getElementById('rounds').value = this.totalRounds;
+                    document.getElementById('paceValue').textContent = this.paceProfiles[this.pace].label;
+                    document.getElementById('roundsValue').textContent = this.totalRounds;
+                }
+            }
+
+            saveSettings() {
+                localStorage.setItem('sonic_snap_settings', JSON.stringify({
+                    hardMode: this.hardMode,
+                    pace: this.pace,
+                    rounds: this.totalRounds
+                }));
+            }
+
+            async start() {
+                // Initialize audio on first user gesture
+                await this.audio.init();
+                
+                // Reset game state
+                this.state = GameState.WAITING;
+                this.currentRound = 0;
+                this.score = 0;
+                this.streak = 0;
+                this.bestMs = null;
+                this.validRTs = [];
+                this.lastRT = null;
+                this.falseStarts = 0;
+                this.noGoHits = 0;
+                
+                // Update UI
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('saveToLeaderboard').disabled = true;
+                document.getElementById('hardMode').disabled = true;
+                document.getElementById('pace').disabled = true;
+                document.getElementById('rounds').disabled = true;
+                
+                this.updateHUD();
+                this.nextRound();
+            }
+
+            stop() {
+                this.clearTimeouts();
+                this.state = GameState.IDLE;
+                
+                // Update UI
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                document.getElementById('hardMode').disabled = false;
+                document.getElementById('pace').disabled = false;
+                document.getElementById('rounds').disabled = false;
+                
+                this.updateStatus('Stopped', '');
+                
+                if (this.currentRound > 0) {
+                    document.getElementById('saveToLeaderboard').disabled = false;
+                }
+            }
+
+            pause() {
+                if (this.state === GameState.PAUSED) return;
+                
+                this.clearTimeouts();
+                this.previousState = this.state;
+                this.state = GameState.PAUSED;
+                this.updateStatus('Paused', '');
+            }
+
+            resume() {
+                if (this.state !== GameState.PAUSED) return;
+                
+                this.state = GameState.WAITING;
+                this.scheduleNextCue();
+            }
+
+            nextRound() {
+                if (this.currentRound >= this.totalRounds) {
+                    this.finish();
+                    return;
+                }
+                
+                this.currentRound++;
+                this.hasReacted = false;
+                this.updateHUD();
+                this.scheduleNextCue();
+            }
+
+            scheduleNextCue() {
+                this.state = GameState.WAITING;
+                this.updateStatus('LISTEN…', 'Wait for the GO beep. Don\'t jump early.');
+                
+                // Random foreperiod based on pace
+                const profile = this.paceProfiles[this.pace];
+                const delay = profile.min + Math.random() * (profile.max - profile.min);
+                
+                // Determine if this is a bait trial (hard mode only)
+                const isBait = this.hardMode && Math.random() < this.BAIT_CHANCE;
+                
+                this.waitTimeout = setTimeout(() => {
+                    if (isBait) {
+                        this.cueBait();
+                    } else {
+                        this.cueGo();
+                    }
+                }, delay);
+            }
+
+            cueGo() {
+                this.state = GameState.CUED_GO;
+                this.cueStartTime = performance.now();
+                this.audio.playGoTone();
+                
+                this.updateStatus('GO!', 'Tap now!', 'grade-a');
+                
+                // Auto-advance after a timeout if no response
+                this.cueTimeout = setTimeout(() => {
+                    if (!this.hasReacted) {
+                        this.handleMissedGo();
+                    }
+                }, 2000);
+            }
+
+            cueBait() {
+                this.state = GameState.CUED_BAIT;
+                this.cueStartTime = performance.now();
+                this.audio.playBaitTone();
+                
+                this.updateStatus('IGNORE', 'Do nothing for ~700ms to pass.', 'grade-b');
+                
+                // Pass window for bait
+                this.cueTimeout = setTimeout(() => {
+                    if (!this.hasReacted) {
+                        this.handleBaitPass();
+                    }
+                }, this.BAIT_PASS_WINDOW);
+            }
+
+            react() {
+                // Ignore if already reacted or in cooldown/finished
+                if (this.hasReacted || this.state === GameState.COOLDOWN || 
+                    this.state === GameState.IDLE || this.state === GameState.FINISHED || 
+                    this.state === GameState.PAUSED) {
+                    return;
+                }
+                
+                this.hasReacted = true;
+                this.clearTimeouts();
+                
+                switch (this.state) {
+                    case GameState.WAITING:
+                        this.handleFalseStart();
+                        break;
+                    case GameState.CUED_GO:
+                        this.handleGoReaction();
+                        break;
+                    case GameState.CUED_BAIT:
+                        this.handleNoGoHit();
+                        break;
+                }
+            }
+
+            handleGoReaction() {
+                const rt = performance.now() - this.cueStartTime;
+                
+                // Check for anticipation (too early)
+                if (rt < this.MIN_VALID_RT) {
+                    this.handleTooEarly();
+                    return;
+                }
+                
+                // Valid reaction
+                this.lastRT = Math.round(rt);
+                this.validRTs.push(this.lastRT);
+                
+                // Update best
+                if (this.bestMs === null || this.lastRT < this.bestMs) {
+                    this.bestMs = this.lastRT;
+                }
+                
+                // Calculate score
+                const points = this.calculatePoints(this.lastRT);
+                this.score += points;
+                this.streak++;
+                
+                // Get grade
+                const grade = this.getGrade(this.lastRT);
+                
+                // Update UI with feedback
+                this.updateStatus(
+                    `${this.lastRT}ms ${grade.emoji}`,
+                    `${grade.label} • +${points} points`,
+                    grade.class
+                );
+                
+                // Haptic feedback
+                this.vibrate(20);
+                
+                this.updateHUD();
+                this.startCooldown();
+            }
+
+            handleFalseStart() {
+                this.falseStarts++;
+                this.streak = 0;
+                this.score = Math.max(0, this.score - 120);
+                
+                this.updateStatus('FALSE START', 'Under 100ms = anticipation.', 'grade-fail');
+                this.vibrate([50, 30, 50]);
+                
+                this.updateHUD();
+                this.startCooldown();
+            }
+
+            handleTooEarly() {
+                this.falseStarts++;
+                this.streak = 0;
+                this.score = Math.max(0, this.score - 100);
+                
+                this.updateStatus('TOO EARLY', 'Under 100ms = anticipation.', 'grade-fail');
+                this.vibrate([50, 30, 50]);
+                
+                this.updateHUD();
+                this.startCooldown();
+            }
+
+            handleNoGoHit() {
+                this.noGoHits++;
+                this.streak = 0;
+                this.score = Math.max(0, this.score - 180);
+                
+                this.updateStatus('NO-GO HIT', 'GO beep is high. Ignore low bait.', 'grade-fail');
+                this.vibrate([100, 50, 100]);
+                
+                this.updateHUD();
+                this.startCooldown();
+            }
+
+            handleBaitPass() {
+                // Successfully ignored bait
+                let points = 120;
+                if (this.streak >= 3) points += 40;
+                
+                this.score += points;
+                this.streak++;
+                
+                this.updateStatus('DISCIPLINE ✓', `+${points} points for control`, 'grade-s');
+                this.vibrate(30);
+                
+                this.updateHUD();
+                this.startCooldown();
+            }
+
+            handleMissedGo() {
+                // No reaction to GO cue
+                this.streak = 0;
+                
+                this.updateStatus('MISSED', 'React faster next time', 'grade-d');
+                
+                this.updateHUD();
+                this.startCooldown();
+            }
+
+            startCooldown() {
+                this.state = GameState.COOLDOWN;
+                
+                this.cooldownTimeout = setTimeout(() => {
+                    this.nextRound();
+                }, this.COOLDOWN_MS);
+            }
+
+            finish() {
+                this.state = GameState.FINISHED;
+                
+                const avgMs = this.validRTs.length > 0 
+                    ? Math.round(this.validRTs.reduce((a, b) => a + b, 0) / this.validRTs.length)
+                    : null;
+                
+                this.updateStatus(
+                    'Done',
+                    avgMs ? `Avg ${avgMs}ms • Session complete. Save your score!` : 'Session complete. Save your score!'
+                );
+                
+                // Enable save button
+                document.getElementById('saveToLeaderboard').disabled = false;
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                document.getElementById('hardMode').disabled = false;
+                document.getElementById('pace').disabled = false;
+                document.getElementById('rounds').disabled = false;
+                
+                this.showToast('Nice set. Save your score or run it back.');
+            }
+
+            calculatePoints(rt) {
+                // Base points
+                let points = Math.max(0, 550 - rt);
+                
+                // Bonuses
+                if (rt < 180) {
+                    points += 75 + 50; // S-tier bonus
+                } else if (rt < 230) {
+                    points += 75; // A-tier bonus
+                }
+                
+                // Streak multipliers
+                if (this.streak >= 6) {
+                    points *= 1.25;
+                } else if (this.streak >= 3) {
+                    points *= 1.15;
+                }
+                
+                return Math.round(points);
+            }
+
+            getGrade(rt) {
+                if (rt < 180) return { label: 'S', emoji: '⚡', class: 'grade-s' };
+                if (rt < 230) return { label: 'A', emoji: '🔥', class: 'grade-a' };
+                if (rt < 280) return { label: 'B', emoji: '💥', class: 'grade-b' };
+                if (rt < 350) return { label: 'C', emoji: '✨', class: 'grade-c' };
+                return { label: 'D', emoji: '🙂', class: 'grade-d' };
+            }
+
+            updateStatus(text, hint = '', className = '') {
+                const statusText = document.getElementById('statusText');
+                statusText.textContent = text.toUpperCase();
+                statusText.className = `status-text ${className}`;
+                document.getElementById('statusHint').textContent = hint;
+            }
+
+            updateHUD() {
+                document.getElementById('hudRound').textContent = `${this.currentRound}/${this.totalRounds}`;
+                document.getElementById('hudScore').textContent = this.score;
+                document.getElementById('hudBest').textContent = this.bestMs ? `${this.bestMs}ms` : '—';
+                
+                const avgMs = this.validRTs.length > 0 
+                    ? Math.round(this.validRTs.reduce((a, b) => a + b, 0) / this.validRTs.length)
+                    : null;
+                document.getElementById('hudAvg').textContent = avgMs ? `${avgMs}ms` : '—';
+                
+                document.getElementById('hudStreak').textContent = this.streak;
+                
+                document.getElementById('statLast').textContent = this.lastRT ? `${this.lastRT}ms` : '—';
+                document.getElementById('statFalseStarts').textContent = this.falseStarts;
+                document.getElementById('statNoGoHits').textContent = this.noGoHits;
+            }
+
+            clearTimeouts() {
+                clearTimeout(this.waitTimeout);
+                clearTimeout(this.cueTimeout);
+                clearTimeout(this.cooldownTimeout);
+            }
+
+            vibrate(pattern) {
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(pattern);
+                }
+            }
+
+            // Leaderboard functions
+            openNameModal() {
+                const modal = document.getElementById('nameModal');
+                modal.classList.add('active');
+                
+                // Load remembered name
+                const savedName = localStorage.getItem('sonic_snap_name_v1');
+                if (savedName) {
+                    document.getElementById('playerName').value = savedName;
+                }
+                
+                document.getElementById('playerName').focus();
+            }
+
+            closeNameModal() {
+                document.getElementById('nameModal').classList.remove('active');
+            }
+
+            saveScore() {
+                const name = document.getElementById('playerName').value.trim();
+                if (!name) {
+                    this.showToast('Please enter a name');
+                    return;
+                }
+                
+                // Remember name
+                localStorage.setItem('sonic_snap_name_v1', name);
+                
+                // Calculate average
+                const avgMs = this.validRTs.length > 0 
+                    ? Math.round(this.validRTs.reduce((a, b) => a + b, 0) / this.validRTs.length)
+                    : null;
+                
+                // Create entry
+                const entry = {
+                    name,
+                    score: this.score,
+                    best: this.bestMs,
+                    avg: avgMs,
+                    mode: this.paceProfiles[this.pace].label,
+                    hard: this.hardMode,
+                    rounds: this.totalRounds,
+                    when: Date.now()
+                };
+                
+                // Load existing leaderboard
+                let leaderboard = [];
+                const saved = localStorage.getItem('sonic_snap_lb_v1');
+                if (saved) {
+                    leaderboard = JSON.parse(saved);
+                }
+                
+                // Add entry and sort
+                leaderboard.push(entry);
+                leaderboard.sort((a, b) => b.score - a.score);
+                leaderboard = leaderboard.slice(0, 10); // Keep top 10
+                
+                // Save
+                localStorage.setItem('sonic_snap_lb_v1', JSON.stringify(leaderboard));
+                
+                this.closeNameModal();
+                this.updateLeaderboard();
+                this.showToast('Score saved to leaderboard!');
+                
+                // Disable save button
+                document.getElementById('saveToLeaderboard').disabled = true;
+            }
+
+            updateLeaderboard() {
+                const content = document.getElementById('leaderboardContent');
+                const saved = localStorage.getItem('sonic_snap_lb_v1');
+                
+                if (!saved || JSON.parse(saved).length === 0) {
+                    content.innerHTML = '<div class="leaderboard-empty">No scores yet. Be the first!</div>';
+                    return;
+                }
+                
+                const leaderboard = JSON.parse(saved);
+                
+                let html = '<table class="leaderboard-table"><thead><tr>';
+                html += '<th>#</th><th>Name</th><th>Score</th><th>Best</th><th>Avg</th><th>Meta</th>';
+                html += '</tr></thead><tbody>';
+                
+                leaderboard.forEach((entry, i) => {
+                    const date = new Date(entry.when).toLocaleDateString();
+                    const meta = `${entry.mode} • ${entry.rounds}R${entry.hard ? ' • Hard' : ''} • ${date}`;
+                    
+                    html += '<tr>';
+                    html += `<td>${i + 1}</td>`;
+                    html += `<td>${this.escapeHtml(entry.name)}</td>`;
+                    html += `<td>${entry.score}</td>`;
+                    html += `<td>${entry.best ? entry.best + 'ms' : '—'}</td>`;
+                    html += `<td>${entry.avg ? entry.avg + 'ms' : '—'}</td>`;
+                    html += `<td style="font-size: 0.75rem; color: var(--gray)">${meta}</td>`;
+                    html += '</tr>';
+                });
+                
+                html += '</tbody></table>';
+                content.innerHTML = html;
+            }
+
+            clearLeaderboard() {
+                if (confirm('Clear all leaderboard entries? This cannot be undone.')) {
+                    localStorage.removeItem('sonic_snap_lb_v1');
+                    this.updateLeaderboard();
+                    this.showToast('Leaderboard cleared');
+                }
+            }
+
+            async share() {
+                const avgMs = this.validRTs.length > 0 
+                    ? Math.round(this.validRTs.reduce((a, b) => a + b, 0) / this.validRTs.length)
+                    : null;
+                
+                let text = `🎯 Sonic Snap\n`;
+                text += `Score: ${this.score}\n`;
+                if (this.bestMs) text += `Best: ${this.bestMs}ms\n`;
+                if (avgMs) text += `Avg: ${avgMs}ms\n`;
+                text += `Mode: ${this.paceProfiles[this.pace].label}${this.hardMode ? ' (Hard)' : ''}\n`;
+                text += `Rounds: ${this.currentRound}/${this.totalRounds}`;
+                
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: 'Sonic Snap Score',
+                            text: text
+                        });
+                    } catch (err) {
+                        // User cancelled or error
+                        if (err.name !== 'AbortError') {
+                            this.copyToClipboard(text);
+                        }
+                    }
+                } else {
+                    this.copyToClipboard(text);
+                }
+            }
+
+            copyToClipboard(text) {
+                // Create temporary textarea
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                
+                try {
+                    document.execCommand('copy');
+                    this.showToast('Copied session result to clipboard.');
+                } catch (err) {
+                    this.showToast('Failed to copy to clipboard');
+                }
+                
+                document.body.removeChild(textarea);
+            }
+
+            showToast(message) {
+                const toast = document.getElementById('toast');
+                toast.textContent = message;
+                toast.classList.add('show');
+                
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        }
+
+        // Initialize game when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            window.game = new SonicSnap();
+        });
+    </script>
+</body>
+</html>
