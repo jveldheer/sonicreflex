@@ -1545,6 +1545,12 @@
             }
         }
 
+        // Toggle instructions function
+        function toggleInstructions() {
+            const instructions = document.getElementById('instructions');
+            instructions.classList.toggle('expanded');
+        }
+
         // Initialize game when DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
             window.game = new SonicSnap();
