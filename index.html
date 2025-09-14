@@ -1355,7 +1355,7 @@
                 this.streak = 0;
                 this.score = Math.max(0, this.score - 180);
                 
-                this.updateStatus('NO-GO HIT', 'GO beep is high. Ignore low bait.', 'grade-fail');
+                this.updateStatus('NO-GO HIT', 'Ignore cadence calls! Only react to the GO beep.', 'grade-fail');
                 this.vibrate([100, 50, 100]);
                 
                 this.updateHUD();
