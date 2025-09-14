@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonic Snap — Audio Reaction Trainer</title>
+    <title>Sonic Snap – Audio Reaction Trainer</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
         
@@ -83,14 +83,17 @@
 
         .logo-wrapper {
             flex-shrink: 0;
-        }
-
-        .logo-wrapper img {
             width: 150px;
-            height: auto;
-            display: block;
+            height: 84px;
+            background: linear-gradient(135deg, var(--yellow), var(--gold));
             border-radius: 8px;
-            filter: drop-shadow(0 0 25px var(--yellow)) brightness(1.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8em;
+            color: var(--black);
+            filter: drop-shadow(0 0 25px var(--yellow));
             animation: logoGlow 3s ease-in-out infinite alternate;
         }
 
@@ -679,8 +682,9 @@
                 gap: 20px;
             }
             
-            .logo-wrapper img {
+            .logo-wrapper {
                 width: 120px;
+                height: 67px;
             }
             
             .header-details {
@@ -740,7 +744,7 @@
     <div class="header">
         <div class="header-content">
             <div class="logo-wrapper">
-                <img src="vlvl16x9.png" alt="Sonic Snap Logo">
+                SONIC SNAP
             </div>
             <div class="header-details">
                 <div class="header-title">SONIC SNAP</div>
@@ -762,21 +766,21 @@
                         <div class="instruction-icon">📱</div>
                         <div class="instruction-text">
                             <strong>MOBILE PLAYERS</strong>
-                            <span>Tap anywhere on screen when you hear the high GO beep (880Hz). The screen is your button - react fast but don't jump the gun!</span>
+                            <span>Tap anywhere on screen when you hear the whistle (GO signal). The screen is your button - react fast but don't jump the gun!</span>
                         </div>
                     </div>
                     <div class="instruction-item">
                         <div class="instruction-icon">💻</div>
                         <div class="instruction-text">
                             <strong>DESKTOP WARRIORS</strong>
-                            <span>Smash that SPACE bar or click when you hear GO. Timing is everything - too early = penalty!</span>
+                            <span>Smash that SPACE bar or click when you hear the whistle. Timing is everything - too early = penalty!</span>
                         </div>
                     </div>
                     <div class="instruction-item">
                         <div class="instruction-icon">🔊</div>
                         <div class="instruction-text">
                             <strong>AUDIO SIGNALS</strong>
-                            <span>HIGH tone (880Hz) = GO NOW! LOW tone (440Hz) = TRAP in hard mode - don't react!</span>
+                            <span>WHISTLE = GO NOW! In hard mode, ignore cadence calls (ON ONE, ON TWO, etc.) - only react to the whistle!</span>
                         </div>
                     </div>
                     <div class="instruction-item">
@@ -815,7 +819,7 @@
             <div class="setting">
                 <div class="toggle">
                     <input type="checkbox" id="hardMode">
-                    <label for="hardMode">Hard Mode (Go / No-Go)</label>
+                    <label for="hardMode">Hard Mode (Cadence Calls)</label>
                 </div>
             </div>
 
@@ -846,7 +850,7 @@
                     <div class="stat-value" id="statFalseStarts">0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">No-Go Hits</div>
+                    <div class="stat-label">Cadence Hits</div>
                     <div class="stat-value" id="statNoGoHits">0</div>
                 </div>
             </div>
@@ -944,11 +948,47 @@
             }
 
             playGoTone() {
-                this.playTone(880);
+                // Play a whistle sound for GO signal
+                if (!this.initialized) return;
+                
+                const duration = 0.4;
+                const oscillator = this.context.createOscillator();
+                const gainNode = this.context.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.masterGain);
+                
+                // Create whistle effect with frequency sweep
+                const now = this.context.currentTime;
+                oscillator.frequency.setValueAtTime(2000, now);
+                oscillator.frequency.exponentialRampToValueAtTime(2400, now + duration * 0.3);
+                oscillator.frequency.exponentialRampToValueAtTime(2200, now + duration);
+                
+                // Add vibrato for realism
+                const vibrato = this.context.createOscillator();
+                const vibratoGain = this.context.createGain();
+                vibrato.frequency.value = 6;
+                vibratoGain.gain.value = 50;
+                vibrato.connect(vibratoGain);
+                vibratoGain.connect(oscillator.frequency);
+                vibrato.start(now);
+                vibrato.stop(now + duration);
+                
+                oscillator.type = 'sine';
+                
+                // Envelope for whistle
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(0.4, now + 0.05);
+                gainNode.gain.exponentialRampToValueAtTime(0.3, now + duration * 0.7);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                
+                oscillator.start(now);
+                oscillator.stop(now + duration + 0.1);
             }
 
             playBaitTone() {
-                this.playTone(440);
+                // Fallback synthesized tone for cadence calls
+                this.playTone(440, 0.3, 0.2);
             }
 
             startCrowdNoise(level) {
@@ -1012,7 +1052,7 @@
             }
         }
 
-        // Main game class
+        // Main game class - stores data in memory instead of localStorage
         class SonicSnap {
             constructor() {
                 this.audio = new AudioManager();
@@ -1038,6 +1078,12 @@
                 this.pace = 3;
                 this.viewingHardLeaderboard = false;
                 
+                // Cadence audio configuration with GitHub URLs
+                this.cadenceAudios = {};
+                this.preloadedCadences = {};
+                this.currentCadence = null;
+                this.goWindowStart = null;
+                
                 this.crowdLevelLabels = {
                     1: 'Quiet',
                     2: 'Low',
@@ -1055,9 +1101,23 @@
                 };
                 
                 this.BAIT_CHANCE = 0.28;
-                this.BAIT_PASS_WINDOW = 700;
+                this.BAIT_PASS_WINDOW = 2400;
                 this.COOLDOWN_MS = 650;
                 this.MIN_VALID_RT = 100;
+                
+                // In-memory storage for settings and leaderboard
+                this.savedSettings = {
+                    hardMode: false,
+                    crowdNoise: false,
+                    crowdLevel: 3
+                };
+                
+                this.leaderboards = {
+                    normal: [],
+                    hard: []
+                };
+                
+                this.playerName = '';
                 
                 this.bindEvents();
                 this.loadSettings();
@@ -1121,32 +1181,31 @@
             }
 
             loadSettings() {
-                const saved = localStorage.getItem('sonic_snap_settings');
-                if (saved) {
-                    const settings = JSON.parse(saved);
-                    this.hardMode = settings.hardMode || false;
-                    this.crowdNoise = settings.crowdNoise || false;
-                    this.crowdLevel = settings.crowdLevel || 3;
-                    
-                    document.getElementById('hardMode').checked = this.hardMode;
-                    document.getElementById('crowdNoise').checked = this.crowdNoise;
-                    document.getElementById('crowdLevel').value = this.crowdLevel;
-                    document.getElementById('crowdLevelValue').textContent = this.crowdLevelLabels[this.crowdLevel];
-                    
-                    if (this.crowdNoise) {
-                        document.getElementById('crowdLevelSetting').style.display = 'block';
-                    }
+                // Use in-memory settings instead of localStorage
+                this.hardMode = this.savedSettings.hardMode;
+                this.crowdNoise = this.savedSettings.crowdNoise;
+                this.crowdLevel = this.savedSettings.crowdLevel;
+                
+                document.getElementById('hardMode').checked = this.hardMode;
+                document.getElementById('crowdNoise').checked = this.crowdNoise;
+                document.getElementById('crowdLevel').value = this.crowdLevel;
+                document.getElementById('crowdLevelValue').textContent = this.crowdLevelLabels[this.crowdLevel];
+                
+                if (this.crowdNoise) {
+                    document.getElementById('crowdLevelSetting').style.display = 'block';
                 }
+                
                 this.viewingHardLeaderboard = this.hardMode;
                 this.updateLeaderboardTitle();
             }
 
             saveSettings() {
-                localStorage.setItem('sonic_snap_settings', JSON.stringify({
+                // Save to in-memory object instead of localStorage
+                this.savedSettings = {
                     hardMode: this.hardMode,
                     crowdNoise: this.crowdNoise,
                     crowdLevel: this.crowdLevel
-                }));
+                };
             }
 
             async start() {
@@ -1226,7 +1285,7 @@
 
             scheduleNextCue() {
                 this.state = GameState.WAITING;
-                this.updateStatus('LISTEN…', 'Wait for the GO beep. Don\'t jump early.');
+                this.updateStatus('LISTEN…', 'Wait for the whistle. Don\'t jump early.');
                 
                 const profile = this.paceProfiles[this.pace];
                 const delay = profile.min + Math.random() * (profile.max - profile.min);
@@ -1247,7 +1306,7 @@
                 this.cueStartTime = performance.now();
                 this.audio.playGoTone();
                 
-                this.updateStatus('GO!', 'Tap now!', 'grade-a');
+                this.updateStatus('GO!', 'React now!', 'grade-a');
                 
                 this.cueTimeout = setTimeout(() => {
                     if (!this.hasReacted) {
@@ -1257,17 +1316,28 @@
             }
 
             cueBait() {
-                this.state = GameState.CUED_BAIT;
-                this.cueStartTime = performance.now();
-                this.audio.playBaitTone();
+                // Select random cadence
+                this.currentCadence = this.cadenceNames[Math.floor(Math.random() * this.cadenceNames.length)];
                 
-                this.updateStatus('IGNORE', 'Do nothing for ~700ms to pass.', 'grade-b');
+                // Show cadence name for 1 second before playing
+                this.updateStatus(this.currentCadence, 'Cadence call coming...', 'grade-b');
                 
-                this.cueTimeout = setTimeout(() => {
-                    if (!this.hasReacted) {
-                        this.handleBaitPass();
-                    }
-                }, this.BAIT_PASS_WINDOW);
+                setTimeout(() => {
+                    this.state = GameState.CUED_BAIT;
+                    this.cueStartTime = performance.now();
+                    
+                    // Play synthesized sound
+                    this.audio.playBaitTone();
+                    
+                    this.updateStatus('IGNORE', 'Don\'t react to cadence calls!', 'grade-b');
+                    
+                    // Extended pass window
+                    this.cueTimeout = setTimeout(() => {
+                        if (!this.hasReacted) {
+                            this.handleBaitPass();
+                        }
+                    }, this.BAIT_PASS_WINDOW);
+                }, 1000);
             }
 
             react() {
@@ -1331,7 +1401,7 @@
                 this.streak = 0;
                 this.score = Math.max(0, this.score - 120);
                 
-                this.updateStatus('FALSE START', 'Under 100ms = anticipation.', 'grade-fail');
+                this.updateStatus('FALSE START', 'Reacted before the whistle!', 'grade-fail');
                 this.vibrate([50, 30, 50]);
                 
                 this.updateHUD();
@@ -1355,40 +1425,8 @@
                 this.streak = 0;
                 this.score = Math.max(0, this.score - 180);
                 
-                this.updateStatus('NO-GO HIT', 'Ignore cadence calls! Only react to the GO beep.', 'grade-fail');
+                this.updateStatus('TOO EARLY!', 'Wait for the whistle at the END of the cadence!', 'grade-fail');
                 this.vibrate([100, 50, 100]);
-                
-                this.updateHUD();
-                this.startCooldown();
-            }
-
-            handleBaitPass() {
-                let points = 120;
-                if (this.streak >= 3) points += 40;
-                
-                // Apply difficulty multipliers to bait pass too
-                if (this.hardMode) {
-                    points *= 1.3;
-                }
-                
-                if (this.crowdNoise) {
-                    const crowdMultipliers = {
-                        1: 1.05,
-                        2: 1.1,
-                        3: 1.15,
-                        4: 1.25,
-                        5: 1.4
-                    };
-                    points *= crowdMultipliers[this.crowdLevel] || 1.15;
-                }
-                
-                points = Math.round(points);
-                
-                this.score += points;
-                this.streak++;
-                
-                this.updateStatus('DISCIPLINE ✓', `+${points} points for control`, 'grade-s');
-                this.vibrate(30);
                 
                 this.updateHUD();
                 this.startCooldown();
@@ -1449,14 +1487,7 @@
             }
 
             checkIfTop10(score) {
-                const storageKey = this.hardMode ? 'sonic_snap_hard_lb_v1' : 'sonic_snap_lb_v1';
-                const saved = localStorage.getItem(storageKey);
-                
-                if (!saved) {
-                    return true;
-                }
-                
-                const leaderboard = JSON.parse(saved);
+                const leaderboard = this.hardMode ? this.leaderboards.hard : this.leaderboards.normal;
                 
                 if (leaderboard.length < 10) {
                     return true;
@@ -1550,9 +1581,8 @@
                 const modal = document.getElementById('nameModal');
                 modal.classList.add('active');
                 
-                const savedName = localStorage.getItem('sonic_snap_name_v1');
-                if (savedName) {
-                    document.getElementById('playerName').value = savedName;
+                if (this.playerName) {
+                    document.getElementById('playerName').value = this.playerName;
                 }
                 
                 document.getElementById('playerName').focus();
@@ -1569,7 +1599,7 @@
                     return;
                 }
                 
-                localStorage.setItem('sonic_snap_name_v1', name);
+                this.playerName = name;
                 
                 const avgMs = this.validRTs.length > 0 
                     ? Math.round(this.validRTs.reduce((a, b) => a + b, 0) / this.validRTs.length)
@@ -1587,19 +1617,17 @@
                     when: Date.now()
                 };
                 
-                const storageKey = this.hardMode ? 'sonic_snap_hard_lb_v1' : 'sonic_snap_lb_v1';
-                
-                let leaderboard = [];
-                const saved = localStorage.getItem(storageKey);
-                if (saved) {
-                    leaderboard = JSON.parse(saved);
-                }
+                const leaderboard = this.hardMode ? this.leaderboards.hard : this.leaderboards.normal;
                 
                 leaderboard.push(entry);
                 leaderboard.sort((a, b) => b.score - a.score);
-                leaderboard = leaderboard.slice(0, 10);
                 
-                localStorage.setItem(storageKey, JSON.stringify(leaderboard));
+                // Keep only top 10
+                if (this.hardMode) {
+                    this.leaderboards.hard = leaderboard.slice(0, 10);
+                } else {
+                    this.leaderboards.normal = leaderboard.slice(0, 10);
+                }
                 
                 this.closeNameModal();
                 this.updateLeaderboard();
@@ -1608,15 +1636,12 @@
 
             updateLeaderboard() {
                 const content = document.getElementById('leaderboardContent');
-                const storageKey = this.viewingHardLeaderboard ? 'sonic_snap_hard_lb_v1' : 'sonic_snap_lb_v1';
-                const saved = localStorage.getItem(storageKey);
+                const leaderboard = this.viewingHardLeaderboard ? this.leaderboards.hard : this.leaderboards.normal;
                 
-                if (!saved || JSON.parse(saved).length === 0) {
+                if (leaderboard.length === 0) {
                     content.innerHTML = '<div class="leaderboard-empty">No scores yet. Be the first!</div>';
                     return;
                 }
-                
-                const leaderboard = JSON.parse(saved);
                 
                 let html = '<table class="leaderboard-table"><thead><tr>';
                 html += '<th>#</th><th>Name</th><th>Score</th><th>Best</th><th>Avg</th><th>Crowd</th><th>Date</th>';
